@@ -26,7 +26,7 @@ model = GPT2LMHeadModel.from_pretrained('distilgpt2')
 # Load pre-trained model tokenizer (vocabulary)
 tokenizer = GPT2TokenizerFast.from_pretrained('distilgpt2')
 
-
+# 生成GPT-2模型的预测
 def get_prediction(tokenizer, indexed_tokens, keywords_gpt, predicted_index, guarantee, T_time, time):
 
     if guarantee and time > T_time:
@@ -50,7 +50,7 @@ def get_prediction(tokenizer, indexed_tokens, keywords_gpt, predicted_index, gua
 
     return pred_word, predicted_text, predicted_index,
 
-
+# 计算GPT-2模型生成文本的困惑度
 def distilGPT2_perplexity_score(sentence):
     tokenize_input = tokenizer.tokenize(sentence)
     tensor_input = torch.tensor(
@@ -59,7 +59,7 @@ def distilGPT2_perplexity_score(sentence):
 
     return math.exp(loss)
 
-
+# 计算文本中n-gram的独特数量
 def distinct_n(example, n, n_distinct, n_total, counter):
     """
     Gives the number of distinct n-grams as well as the total n-grams
@@ -82,7 +82,7 @@ def distinct_n(example, n, n_distinct, n_total, counter):
         n_total = 1
     return n_distinct, n_total, counter
 
-
+# 用于过滤概率分布的函数
 def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')):
     """ Filter a distribution of logits using top-k and/or nucleus (top-p) filtering
         Args:
@@ -118,7 +118,7 @@ def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')
 
     return logits
 
-
+# 更具一些条件调整权重
 def get_weight(weight, guarantee, T_time, time):
 
     if guarantee:
@@ -131,7 +131,7 @@ def get_weight(weight, guarantee, T_time, time):
 
     return weight
 
-
+# 从文件中获取关键词集
 def get_keywordsets(task='commentgen', file_name="/home/blockchain/wanghl/train_lm_with_keywords/data_process/test_title_search_in_train_all.csv"):
     if task == 'commentgen':
         keyword_sets = []
@@ -163,7 +163,7 @@ def get_keywordsets(task='commentgen', file_name="/home/blockchain/wanghl/train_
             # keyword_sets = [(random.choice(in_texts), list(line.strip().split(", "))) for line in lines]
     return keyword_sets
 
-
+# 获取包含比特流的关键词集
 def get_keywordsets_bitstream(task='commentgen', file_name="/data2/yahoo_news_release/test_title_search_in_dev_all.csv"):
     if task == 'commentgen':
         keyword_sets = []
@@ -220,7 +220,7 @@ def get_keywordsets_bitstream(task='commentgen', file_name="/data2/yahoo_news_re
             # keyword_sets = [(random.choice(in_texts), list(line.strip().split(", "))) for line in lines]
     return keyword_sets
 
-
+# 获取不包含未知词（UNK）的关键词集
 def get_keywordsets_bitstream_jsonl_wo_unk(file_name="/data2/yahoo_news_release/test_title_search_in_dev_all.csv", enc_dict={}):
 
     keyword_sets = []
@@ -266,7 +266,7 @@ def get_keywordsets_bitstream_jsonl_wo_unk(file_name="/data2/yahoo_news_release/
 
     return keyword_sets
 
-
+# 获取不包含未知词（UNK）的关键词集，使用不同的表示方法
 def get_keywordsets_bitstream_jsonl_wo_unk_v2(file_name="/data2/yahoo_news_release/test_title_search_in_dev_all.csv", enc_dict={}):
     # 这里秘密信息的最开始5bit表示秘密信息index的数量 方便后续解码
     keyword_sets = []
@@ -318,7 +318,7 @@ def get_keywordsets_bitstream_jsonl_wo_unk_v2(file_name="/data2/yahoo_news_relea
 # 对应num_bit+len_bit
 # 比特流这里加了 前缀（5bit表示index的个数）+4bit（表示index的长度是几bit）
 
-
+#同上
 def get_keywordsets_bitstream_jsonl_wo_unk_v3(file_name="/data2/yahoo_news_release/test_title_search_in_dev_all.csv", enc_dict={}):
     # 这里秘密信息的最开始5bit表示秘密信息index的数量 方便后续解码
     keyword_sets = []
@@ -421,11 +421,11 @@ def get_keywordsets_bitstream_jsonl(task='commentgen', file_name="/data2/yahoo_n
             # keyword_sets = [(random.choice(in_texts), list(line.strip().split(", "))) for line in lines]
     return keyword_sets
 
-
+# 使用glove模型进行编码
 def glove_encode(glove_encoder, word):
     return glove_encoder(word)
 
-
+# 计算一个得分
 def get_score(k, number_of_words_per_sentence, online_probability, proba):
     alpha = 0.6
     length = (k+1)*number_of_words_per_sentence
@@ -434,7 +434,7 @@ def get_score(k, number_of_words_per_sentence, online_probability, proba):
 
     return score_
 
-
+# 获取GPT-2模型的logits
 def get_logits(model, tokenizer, text, this_sequence, temperature):
     # GPT2 - generate logits
     '''
@@ -466,7 +466,7 @@ def distilGPT2_perplexity_score(sentence):
 
     return math.exp(loss)
 
-
+# 计算关键词相似性
 def get_sim(keywords_enc, keywords_gpt, converter_table, guarantee, mode, only_max):
     converter_table_tensor = torch.FloatTensor(converter_table)
     converter_table_tensor = converter_table_tensor.to('cuda')
@@ -526,7 +526,7 @@ def get_sim(keywords_enc, keywords_gpt, converter_table, guarantee, mode, only_m
 
     return sim
 
-
+# 获取关键词的编码
 def get_keywords(keywords, enc_dict, tokenizer, mode):
     keywords_ = [w for w in keywords]
 
@@ -659,7 +659,7 @@ def count_word_stem(word, sequence):
 
 # A score function for the quality of the sentence
 
-
+# 评估句子质量，考虑词频和困惑度
 def evaluate_quality(sequence, word, related_count, perplexity, guide, temp=1.):
     # we aim for one ocurance of the word,  and low perplexity
     w_1 = 1
@@ -684,7 +684,7 @@ def evaluate_quality(sequence, word, related_count, perplexity, guide, temp=1.):
 
     return quality_score, word_count
 
-
+#线性评估
 # A score function for the quality of the sentence
 def evaluate_quality_linear(sequence, word_count, perplexity, temp=1., perp=False):
     # we aim for one ocurance of the word,  and low perplexity
@@ -700,20 +700,20 @@ def evaluate_quality_linear(sequence, word_count, perplexity, temp=1., perp=Fals
 
     return quality_score
 
-
+# 负余弦相似性
 # simply the negative cosine similarity for use in calculating the 'best_tour'
 def neg_cosine_similarity(v, w):
     return -1 * cosine_similarity(np.reshape(v, (1, -1)), np.reshape(w, (1, -1)))
 
 # simply the positive cosine similarity for use in calculating the "worst" tour using 'best_tour' - used only as a sanity check (is worst worse than best?)
 
-
+# 正余弦相似性
 def pos_cosine_similarity(v, w):
     return cosine_similarity(np.reshape(v, (1, -1)), np.reshape(w, (1, -1)))
 
 # function to calculate the total tour length when visiting the words in the given 'order'
 
-
+#计算导游词之间的间距
 def tour_length(distance_matrix, order):
     length = 0
     for i, j in zip(order, order[1:]):

@@ -52,12 +52,12 @@ if len(generatefile) > 4:
 mode = args.mode
 logger = logging.getLogger(__name__)
 out_logger = mode+"_"+alg+"_"+generatefile + \
-    "_" + log_stamp.strftime('%Y.%m.%d-%H:%M:%S')
+    "_" + log_stamp.strftime('%Y.%m.%d-%H_%M_%S')
 logging.basicConfig(
     filename='log_prompt/' + out_logger + '.log',
     filemode='w+',  # 模式，有w和a，w就是写模式，每次都会重新写日志，覆盖之前的日志
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
+    datefmt="%m/%d/%Y %H_%M_%S",
     level=logging.INFO,
 )
 logger.info(configs)
@@ -69,10 +69,8 @@ def generate(args, configs):
     # print(trainfile)
     if model_type.lower() == "gpt2":
         out_dir = configs.get("model", "model_name_or_path")
-        #out_dir="D:\Hi-Stega-main\test_gpt2"
         from transformers import AutoTokenizer, GPT2LMHeadModel
         tokenizer = AutoTokenizer.from_pretrained(out_dir)
-        #tokenizer = AutoTokenizer.from_pretrained("D:\Hi-Stega-main\test_gpt2\tokenizer.json")
         model = GPT2LMHeadModel.from_pretrained(out_dir)
         model.to(device)
 

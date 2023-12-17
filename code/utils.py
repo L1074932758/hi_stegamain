@@ -14,15 +14,17 @@ from sklearn.model_selection import train_test_split
 
 
 class Dataset(Dataset):
+    """标记化和数据处理"""
+
     def __init__(self, data, ctx_len, epoch_length_fixed, out_dir, is_uncase=True, word_level=True, min_frequency=1,
                  vocab_size=10000):
         print('building token list...', end=' ')
-        if is_uncase:
+        if is_uncase:  # 是否将所有文本转换为小写
             data = data.lower()
-        if word_level:
-            self.UNK_TOKEN = "[UNK]"
-            data = " [SEP] ".join(data.split("\n"))
-            data = data.strip().split()
+        if word_level:  # 是否使用词级别的标记化
+            self.UNK_TOKEN = "[UNK]"    # 未知词汇标记
+            data = " [SEP] ".join(data.split("\n"))   # 按照换行符生成分隔符
+            data = data.strip().split()    # 得到单词列表
             items = sorted(collections.Counter(data).items(),
                            key=lambda x: x[1], reverse=True)
 
@@ -68,7 +70,7 @@ class Dataset(Dataset):
     def __getitem__(self, idx):
         # cheat: pick a random spot in dataset
         i = np.random.randint(0, len(self.data) - (self.ctx_len + 1))
-        chunk = self.data[i:i+self.ctx_len+1]
+        chunk = self.data[i:i + self.ctx_len + 1]
         dix = [self.stoi.get(s, self.stoi[self.UNK_TOKEN]) for s in chunk]
         x = torch.tensor(dix[:-1], dtype=torch.long,
                          device=torch.device('cuda'))
@@ -78,6 +80,7 @@ class Dataset(Dataset):
 
 
 class TOKENIZER():
+    """文本处理和分词工具"""
     def __init__(self, WORD_NAME, UNKNOWN_CHAR='\ue083'):
         with open(WORD_NAME + '.json', "r", encoding="utf-16") as result_file:
             self.word_table = json.load(result_file)
@@ -90,6 +93,7 @@ class TOKENIZER():
         self.UNKNOWN_CHAR = self.stoi[UNKNOWN_CHAR]
 
     def refine_context(self, context):
+        """数据清洗"""
         context = context.strip().split('\n')
         for c in range(len(context)):
             context[c] = context[c].strip().strip('\u3000').strip('\r')
@@ -101,6 +105,7 @@ class TOKENIZER():
         return context
 
     def sample_logits(self, out, x, ctx_len, temperature=1.0, top_p_usual=None, top_p_newline=None):
+        """根据模型输出和给定参数采样下一个字符"""
         # out[self.UNKNOWN_CHAR] = -float('Inf')
 
         lastChar = int(x[-1])
@@ -142,6 +147,7 @@ website: https:bhrigu.me
 
 
 class HuffmanCoding:
+    """霍夫曼编码，数据压缩"""
     def __init__(self):
         self.heap = []
         self.codes = {}
@@ -312,8 +318,8 @@ def set_seed(seed):
 
 
 def bpw(filename):
-    bit_file = filename+".bit"
-    text_file = filename+".txt"
+    bit_file = filename + ".bit"
+    text_file = filename + ".txt"
     with open(bit_file, "r", encoding="utf-8") as f:
         bits_lines = f.read().split("\n")
         bits = "".join(bits_lines)
@@ -322,10 +328,11 @@ def bpw(filename):
         words = []
         for line in lines:
             words += line.split()[1:]
-    print("%s : %s" % (filename, str(len(bits)/len(words))))
+    print("%s : %s" % (filename, str(len(bits) / len(words))))
 
 
 def bpw_jsonlines(filename, max_num=None):
+    """输出平均比特数"""
     with open(filename, "r", encoding="utf-8") as f:
         bits = []
         tokens = []
@@ -341,6 +348,7 @@ def bpw_jsonlines(filename, max_num=None):
 
 
 def sample_for_classification(cover_file, stego_file, out_dir, max_num=10000):
+    """在两个json文件中选取数据集并保存"""
     labels = []
     texts = []
     covers = []
@@ -373,6 +381,7 @@ def sample_for_classification(cover_file, stego_file, out_dir, max_num=10000):
         f.write("\n".join(stegos))
 
     def write2file(X, Y, filename):
+        """将文本和标签写入CSV文件"""
         datas = []
         i = 0
         with open(filename, "w", encoding="utf-8") as f:
@@ -380,7 +389,7 @@ def sample_for_classification(cover_file, stego_file, out_dir, max_num=10000):
             writer.writerow(["text", "label"])
             for x, y in zip(X, Y):
                 writer.writerow([x, y])
-
+    # 分割数据集并保存
     train_texts, val_texts, train_labels, val_labels = train_test_split(
         texts, labels, train_size=0.8)
     val_texts, test_texts, val_labels, test_labels = train_test_split(
@@ -391,13 +400,14 @@ def sample_for_classification(cover_file, stego_file, out_dir, max_num=10000):
 
 
 def sample_from_txt_and_jsonl(cover_file, stego_file, out_dir, max_num=10000, do_sample=False):
+    """从两个文本文件取样并保存"""
     labels = []
     texts = []
     covers = []
     stegos = []
     os.makedirs(out_dir, exist_ok=True)
-    with open(cover_file, "r", encoding="utf-8") as f:
-        if not do_sample:
+    with open(cover_file, "r", encoding="utf-8") as f:    # 处理纯文本文件
+        if not do_sample:    # 决定是否顺序抽取
             covers = f.read().split("\n")[:max_num]
         else:
             covers = f.read().split("\n")
@@ -411,7 +421,7 @@ def sample_from_txt_and_jsonl(cover_file, stego_file, out_dir, max_num=10000, do
         #    lens.append(len(cover.split(" ")))
         # print(np.mean(lens), np.std(lens), np.max(lens), np.min(lens))
 
-    with open(stego_file, "r", encoding="utf-8") as f:
+    with open(stego_file, "r", encoding="utf-8") as f:    # 处理json lines文件
         counter = 0
         for stego in jsonlines.Reader(f):
             if not do_sample:
@@ -436,7 +446,7 @@ def sample_from_txt_and_jsonl(cover_file, stego_file, out_dir, max_num=10000, do
                 stegos = stegos[:max_num]
                 labels += [1] * len(stegos)
 
-    print(out_dir, len(covers), len(stegos))
+    print(out_dir, len(covers), len(stegos))    # 保存抽取样本
     with open(os.path.join(out_dir, "cover.txt"), "w", encoding="utf-8") as f:
         f.write("\n".join(covers))
 
@@ -445,6 +455,7 @@ def sample_from_txt_and_jsonl(cover_file, stego_file, out_dir, max_num=10000, do
 
 
 def compute_fine_tune_ppl(out_dir=None, sentence=None):
+    """调整后的语言模型的困惑度"""
     model_name_or_path = out_dir
     device = "cuda"
     model = GPT2LMHeadModel.from_pretrained(model_name_or_path).to(device)
@@ -454,7 +465,7 @@ def compute_fine_tune_ppl(out_dir=None, sentence=None):
         tokens = tokenizer(sentence, return_tensors="pt")
         input_ids = tokens.input_ids.to(device)
         target_ids = input_ids.clone()
-        neg_log_likelihood = model(input_ids,  labels=target_ids)[0]
+        neg_log_likelihood = model(input_ids, labels=target_ids)[0]
         nlls.append(float(neg_log_likelihood))
         ppl = np.exp(np.array(nlls).mean())
     print(f"using {model_name_or_path} calculate: ppl={ppl:.4f}")
@@ -468,12 +479,13 @@ tokenizer = GPT2TokenizerFast.from_pretrained(model_name_or_path)
 
 
 def compute_gpt2_ppl(sentence=None):
+    """计算单个句子在模型中的困惑都"""
     nlls = []
     with torch.no_grad():
         tokens = tokenizer(sentence, return_tensors="pt")
         input_ids = tokens.input_ids.to(device)
         target_ids = input_ids.clone()
-        neg_log_likelihood = model(input_ids,  labels=target_ids)[0]
+        neg_log_likelihood = model(input_ids, labels=target_ids)[0]
         nlls.append(float(neg_log_likelihood))
         ppl = np.exp(np.array(nlls).mean())
     print(f"using {model_name_or_path} calculate: ppl={ppl:.4f}")
@@ -481,19 +493,20 @@ def compute_gpt2_ppl(sentence=None):
 
 
 def compute_ppl(model_name_or_path="gpt2", sentences=None):
+    """计算一组句子的困惑度"""
     from transformers import GPT2LMHeadModel, GPT2TokenizerFast
 
-    device = "cuda"
-    model = GPT2LMHeadModel.from_pretrained(model_name_or_path).to(device)
-    tokenizer = GPT2TokenizerFast.from_pretrained(model_name_or_path)
+    device = "CUDA"
+    model = GPT2LMHeadModel.from_pretrained(model_name_or_path).to(device)    # 加载初始化语言模型
+    tokenizer = GPT2TokenizerFast.from_pretrained(model_name_or_path)   # 加载分词器，便于模型理解
     nlls = []
-    with torch.no_grad():
+    with torch.no_grad():    #禁用梯度计划，提高效率
         for sentence in sentences:
             tokens = tokenizer(tokenizer.bos_token +
                                sentence, return_tensors="pt")
             input_ids = tokens.input_ids.to(device)
             target_ids = input_ids.clone()
-            neg_log_likelihood = model(input_ids,  labels=target_ids)[0]
+            neg_log_likelihood = model(input_ids, labels=target_ids)[0]
             nlls.append(float(neg_log_likelihood))
     ppl = np.exp(np.array(nlls).mean())
     print(f"using {model_name_or_path} calculate: ppl={ppl:.4f}")
@@ -509,9 +522,10 @@ def compute_ppl(model_name_or_path="gpt2", sentences=None):
 #             f_out.write(" [turn] ".join(data) + "\n")
 
 def sample_data(in_file_path, sample_num=1000000, do_shuffle=False):
+    """从大的文本文件抽样并保存"""
     counter = 0
     if not do_shuffle:
-        with open(in_file_path, "r") as f_in, open(in_file_path+str(sample_num), "w") as f_out:
+        with open(in_file_path, "r") as f_in, open(in_file_path + str(sample_num), "w") as f_out:
             while True:
                 sentence = f_in.readline()
                 if not sentence:
@@ -532,7 +546,7 @@ def sample_data(in_file_path, sample_num=1000000, do_shuffle=False):
                     # print(counter)
             ids = np.random.choice(counter, sample_num, replace=False)
             ids = np.sort(ids)
-        with open(in_file_path, "r") as f_in, open(in_file_path + str(sample_num)+"_do_shuffle", "w") as f_out:
+        with open(in_file_path, "r") as f_in, open(in_file_path + str(sample_num) + "_do_shuffle", "w") as f_out:
             counter = 0
             while True:
                 sentence = f_in.readline()
@@ -541,7 +555,7 @@ def sample_data(in_file_path, sample_num=1000000, do_shuffle=False):
                 else:
                     if len(ids) > 0 and counter == ids[0]:
                         # print(counter)
-                        f_out.write(" ".join(sentence.strip())+"\n")
+                        f_out.write(" ".join(sentence.strip()) + "\n")
                         if len(ids) == 1:
                             break
                         else:

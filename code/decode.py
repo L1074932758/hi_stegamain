@@ -5,28 +5,30 @@ from configparser import ConfigParser
 
 # MSB
 # e.g. [0, 1, 1, 1] looks like 0111=7
+# 将MSB形式的位列表转换成整数
 def msb_bits2int(bits):
     res = 0
     for i, bit in enumerate(bits[::-1]):
         res += bit * (2 ** i)
     return res
 
-
+# 将整数转换成MSB形式的位列表
 def msb_int2bits(inp, num_bits):
     if num_bits == 0:
         return []
     strlist = ('{0:0%db}' % num_bits).format(inp)
     return [int(strval) for strval in strlist]
 
-#lsb
+# lsb
 # e.g. [0, 1, 1, 1] looks like 1110=14
+# 将LSB形式的位列表转换成整数
 def lsb_bits2int(bits):
     res = 0
     for i, bit in enumerate(bits):
         res += bit * (2 ** i)
     return res
 
-
+# 将整数转换成LSB形式的位列表
 def lsb_int2bits(inp, num_bits):
     if num_bits == 0:
         return []
@@ -34,7 +36,7 @@ def lsb_int2bits(inp, num_bits):
     return [int(strval) for strval in reversed(strlist)]
 
 
-
+# 用于计算两个位列表的相同前缀长度
 def num_same_from_beg(bits1, bits2):
     assert len(bits1) == len(bits2)
     for i in range(len(bits1)):
@@ -42,7 +44,7 @@ def num_same_from_beg(bits1, bits2):
             break
     return i
 
-
+# 负责寻找一个排序后列表中离目标值最近的一组索引
 def near(alist, anum):
     up = len(alist) - 1
     if up == 0:
@@ -63,7 +65,7 @@ def near(alist, anum):
             index = up
     return index
 
-
+# 负责寻找一个排序后的列表中离目标值最近的一组索引
 def find_nearest_list(prob, delta,):
     diff = (np.array(prob) - delta)
     tmp_idx = np.argmin(diff**2)
@@ -92,7 +94,7 @@ def find_nearest_list(prob, delta,):
         else:
             return idx
 
-
+# 负责寻找一个排序后的列表中离目标值最近的索引
 def find_nearest(prob, delta,):
     diff = (np.array(prob) - delta)
     tmp_idx = np.argmin(diff**2)
@@ -106,7 +108,7 @@ def find_nearest(prob, delta,):
         idx += new_idx+1
         return idx
 
-
+# 根据概率将索引分为两组
 def grouping(prob):
     # prob = prob/prob.sum()
     prob, indices = prob.sort(descending=True)
@@ -144,7 +146,7 @@ def grouping(prob):
         groups[1][1] = indices
     return groups
 
-
+# 隐写算法的解码器，使用固定长度编码
 def FLC_decoder(prob, prev, bit, **kwargs):
     prob, indices = prob.sort(descending=True)
     topk = 2 ** bit
@@ -158,7 +160,7 @@ def FLC_decoder(prob, prev, bit, **kwargs):
     else:
         return ""
 
-
+# 隐写算法的解码器，使用霍夫曼编码
 def HC_decoder(prob, prev,  bit, **kwargs):
     prob, indices = prob.sort(descending=True)
     prob = prob[:2 ** bit]
@@ -174,7 +176,7 @@ def HC_decoder(prob, prev,  bit, **kwargs):
     else:
         return ""
 
-
+# 隐写算法解码器，使用自适应编码
 def AC_decoder(prob, prev, cur_interval, precision=52, **kwargs):
     prob, indices = prob.sort(descending=True)
     # prob = prob[:2 ** Generation_Configs.bit]
@@ -223,7 +225,7 @@ def AC_decoder(prob, prev, cur_interval, precision=52, **kwargs):
     else:
         return cur_interval, ""
 
-
+# 隐写算法解码器，使用动态规划编码
 def ADG_decoder(prob, prev, **kwargs):
     device = prob.device
     prob, indices = prob.sort(descending=True)
@@ -273,7 +275,7 @@ def ADG_decoder(prob, prev, **kwargs):
         extract_bits += bit_embed
     return extract_bits
 
-
+# 这是ADG解码器的变体版本，采用不同的策略
 def ADG_V2_decoder(prob, prev, epsilon, max_bit, **kwargs):
     mean = 0.5
     # ori_prob = prob
@@ -302,11 +304,11 @@ def ADG_V2_decoder(prob, prev, epsilon, max_bit, **kwargs):
         groups = grouping(prob)
     return return_bits
 
-
+# 简单解码器，不应用任何编码
 def PLAIN_decoder(prob, prev, **kwargs):
     return ""
 
-
+# 解码器主要函数，根据指定算法选择合适的解码函数
 def decoder(alg, prob, prev, cur_interval=None, **kwargs):
     if alg.lower() == "plain":
         return PLAIN_decoder(prob, **kwargs)
@@ -322,7 +324,7 @@ def decoder(alg, prob, prev, cur_interval=None, **kwargs):
         return ADG_V2_decoder(prob, prev, **kwargs)
     raise ValueError("no such algorithm")
 
-
+# 用于从配置文件中提取解码器的配置参数
 def decoder_configs(configs:ConfigParser, alg):
     kwargs = {}
     for k in configs.options("generate"):

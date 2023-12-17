@@ -21,7 +21,7 @@ def parse_arg_main():
     parser.add_argument("--mode", type=str, help="Train or Generate",
                         choices=["T", "G", "E"], default="G")
     parser.add_argument("--config_path", type=str,
-                        default="generate_configs/Yahoo-gpt-generate_prompt_adg.ini")
+                        default="generate_configs/Yahoo-gpt-generate_prompt_adgv2.ini")
     # Yahoo-gpt-generate_wo_prompt.ini
     # Yahoo-gpt-generate.ini
     # gpt-generate.ini
@@ -47,17 +47,23 @@ if len(generatefile) > 4:
 mode = args.mode
 logger = logging.getLogger(__name__)
 out_logger = mode+"_"+alg+"_"+generatefile + \
-    "_" + log_stamp.strftime('%Y.%m.%d-%H:%M:%S')
+    "_" + log_stamp.strftime('%Y.%m.%d-%H_%M_%S')
 logging.basicConfig(
     filename='log_prompt/' + out_logger + '.log',
     filemode='w+',  # 模式，有w和a，w就是写模式，每次都会重新写日志，覆盖之前的日志
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
+    datefmt="%m/%d/%Y %H_%M_%S",
     level=logging.INFO,
 )
 logger.info(configs)
 
-
+# 1.创建输出目录
+# 2.加载一些配置信息
+# 3.加载GPT-2模型和Tokenizer
+# 4.读取比特流文件，设置生成相关参数
+# 5.循环生成文本
+# 6.写入总结信息
+# 7.打印和记录日志
 def generate(args, configs):
     out_dir = args.out_dir
     os.makedirs(out_dir, exist_ok=True)

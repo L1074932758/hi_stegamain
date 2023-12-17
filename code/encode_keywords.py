@@ -18,7 +18,8 @@ word_embedding = {
     'word2vec': "word2vec-google-news-300"
 }
 
-
+# 从包含关键词JSON Lines格式的文件中创建嵌入字典
+# 加载预训练的词嵌入模型，将关键词映射到对应的嵌入向量，生成的词典以Pickle形式保存
 def create_enc_dict_jsonl(file_name, embedding):
     print("create_enc_dict......")
     embedding_file = word_embedding[embedding]
@@ -27,7 +28,7 @@ def create_enc_dict_jsonl(file_name, embedding):
 
     # Load word embedding data
     print('{} word embeddings loading...'.format(embedding))
-    #encoder = api.load(embedding_file)
+    # encoder = api.load(embedding_file)
     encoder = api.load("glove-wiki-gigaword-300")
     print('{} word embeddings loaded'.format(embedding))
     glove_dict = {}
@@ -54,7 +55,7 @@ def create_enc_dict_jsonl(file_name, embedding):
     with open(save_path_dict, 'wb') as f:
         pickle.dump(glove_dict, f, pickle.HIGHEST_PROTOCOL)
 
-
+# 与上述处理类似，但是在处理未知词（unk)时不会添加默认的未知词向量
 def create_enc_dict_jsonl_wo_unk(file_name, embedding):
     print("create_enc_dict......")
     embedding_file = word_embedding[embedding]
@@ -89,7 +90,7 @@ def create_enc_dict_jsonl_wo_unk(file_name, embedding):
     with open(save_path_dict, 'wb') as f:
         pickle.dump(glove_dict, f, pickle.HIGHEST_PROTOCOL)
 
-
+# 从CSV格式的文件中创建嵌入字典，同上操作保存生成的字典
 def create_enc_dict(file_name, embedding):
     print("create_enc_dict......")
     embedding_file = word_embedding[embedding]
@@ -126,7 +127,8 @@ def create_enc_dict(file_name, embedding):
     with open(save_path_dict, 'wb') as f:
         pickle.dump(glove_dict, f, pickle.HIGHEST_PROTOCOL)
 
-
+# 根据给定的任务类型，从不同的文件格式创建嵌入字典。
+# 根据任务类型选择相应的文件读取方式，并将关键词映射到对应的嵌入向量，最后保存生成的字典
 def create_enc_dict_ori(file_name, embedding, task):
     print("create_enc_dict......")
 
@@ -211,6 +213,8 @@ def create_enc_dict_ori(file_name, embedding, task):
 #             os.path.abspath(__file__))) + '/data/keyword_to_articles/test_' +str(n) + '.npy'
 #         np.save(save_path, glove_words)
 
+# 主程序：解析命令行参数，包括输入文件路径，词嵌入模型类型和任务类型，然后调用相应的创建嵌入字典的函数
+
 if __name__ == "__main__":
     # Parse arguments
     parser = argparse.ArgumentParser()
@@ -224,4 +228,4 @@ if __name__ == "__main__":
     embedding = args.word_embedding
     task = args.task
 
-    create_enc_dict(file_name, embedding, task)
+    create_enc_dict(file_name, embedding)

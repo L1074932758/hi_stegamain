@@ -20,7 +20,7 @@ porter = PorterStemmer()
 
 warnings.filterwarnings("ignore")
 
-
+# 命令行参数解析器
 def parse_arg_main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", type=str, help="Train or Generate",
@@ -38,30 +38,39 @@ def parse_arg_main():
 
 
 args = parse_arg_main()
-#os.environ["CUDA_VISIBLE_DEVICES"] = args.gpuid
+# os.environ["CUDA_VISIBLE_DEVICES"] = args.gpuid
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 configs = ConfigParser()
 configs.read(args.config_path)
 log_stamp = datetime.datetime.now()
 alg = configs.get("generate", "alg")
 model_type = configs.get("model", "model_type")
-generatefile = configs.get("model", "model_name_or_path")
+generatefile = configs.get("model", "model_name_or_path")  # 在windows选不允许冒号在文件名中故修改
 
 if len(generatefile) > 4:
     generatefile = generatefile.split("/")[-2]
 mode = args.mode
 logger = logging.getLogger(__name__)
 out_logger = mode+"_"+alg+"_"+generatefile + \
-    "_" + log_stamp.strftime('%Y.%m.%d-%H:%M:%S')
+    "_" + log_stamp.strftime('%Y.%m.%d-%H_%M_%S')  # 在windows选不允许冒号在文件名中故修改
 logging.basicConfig(
     filename='log_prompt/' + out_logger + '.log',
     filemode='w+',  # 模式，有w和a，w就是写模式，每次都会重新写日志，覆盖之前的日志
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
+    datefmt="%m/%d/%Y %H_%M_%S",  # 在windows选不允许冒号在文件名中故修改
     level=logging.INFO,
 )
 logger.info(configs)
 
+# 1.创建输出目录
+# 2.读取生成配置参数
+# 3.加载模型
+# 4.针对每个关键词集生成文本
+# 5.更具模型生成文本
+# 6.记录生成结果
+# 7.写入生成结果文件
+# 8.打印生成进度
+# 9.如果模型不是GPT-2，则输出no such model的提示信息
 
 def generate(args, configs):
     out_dir = args.out_dir
@@ -75,7 +84,7 @@ def generate(args, configs):
     mode = configs.get("generate", "mode")
     only_max = configs.get("generate", "only_max")
     converter_table = np.load(str(os.path.dirname(
-        os.path.abspath(__file__))) + '/data/converter_table_' + str(embedding) + '.npy')
+        os.path.abspath(__file__))) + '/data/converter_table_' + str(embedding) + '.npy')  # 修改相关路径问题
     if model_type.lower() == "gpt2":
         out_dir = configs.get("model", "model_name_or_path")
         from transformers import AutoTokenizer, GPT2LMHeadModel
@@ -93,7 +102,7 @@ def generate(args, configs):
         generate_num = configs.getint("generate", "generate_num")
         alg = configs.get("generate", "alg")
         reference_filepath = configs.get("generate", "reference_filepath")
-        # reference_filepath = "/data2/yahoo_news_release/test_title_search_in_dev_all.csv"
+        # reference_filepath = "/yahoo_news_release/test_title_search_in_dev_all.csv"
         kwargs = encoder_configs(configs, alg)
 
         outfile = mode+"_"+alg+"_"+generatefile + "_" + init_weight
@@ -130,7 +139,7 @@ def generate(args, configs):
                 secret_sets = get_keywordsets_bitstream_jsonl_wo_unk_v3(
                     file_name=reference_filepath, enc_dict=enc_dict)  # 得到关键词列表和前文
                 # get_jsonl_wo_unk_v3(file_name=reference_filepath, enc_dict=enc_dict)  # 得到清除unk的文件
-               # while len(stega_text) < generate_num:
+                # while len(stega_text) < generate_num:
                 for j, keyword_set in enumerate(secret_sets):
                     in_text, keywords, bit_stream_ori = keyword_set
                     keywords_ori = keywords
@@ -139,7 +148,7 @@ def generate(args, configs):
                     bits_num = 0
                     failure = 0
                     '''
-                    with open(configs.get("generate", "bit_filepath"), 'r', encoding='utf8') as f:
+                        with open(configs.get("generate", "bit_filepath"), 'r', encoding='utf8') as f:
                         bit_stream_ori = f.read().strip()
                         bit_stream = list(bit_stream_ori)
                         bit_stream = ''.join(bit_stream)
@@ -147,6 +156,7 @@ def generate(args, configs):
                         bit_index = int(torch.randint(
                             0, high=100, size=(1,)))
                     '''
+
                     # keywords = list(keywords.split())
                     # 因为是非定长编码,所以需要在秘密信息比特流后面加一定长度的信息
                     if len(bit_stream_ori) <= max_length * math.log2(tokenizer.vocab_size):
